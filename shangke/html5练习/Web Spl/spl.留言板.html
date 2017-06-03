@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link href="https://cdn.bootcss.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        h1 {
+            text-align: center;
+        }
+        
+        #box {
+            width: 800px;
+            height: 250px;
+            margin: 0 auto;
+        }
+        
+        #contont {
+            resize: none;
+        }
+        
+        .table {
+            width: 800px;
+            margin: 0 auto;
+        }
+        
+        tr:hover .now {
+            opacity: 1;
+            /*display: block;*/
+        }
+        
+        .now {
+            opacity: 0;
+            /*display: none;*/
+            width: 100px;
+            height: 50px;
+            background: orangered;
+            border-radius: 10px;
+            color: white;
+            float: right;
+            text-align: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>留言板</h1>
+    <div id="status" name="status">状态信息</div>
+    <div id="box">
+        <h5><i>发表内容</i></h5>
+        <textarea id="content" rows="5" cols="100"></textarea>
+        <h5><i>大侠留个名</i></h5>
+        <input type="text">
+        <input type="button" name="" value="发表">
+    </div>
+    <table class="table table-hover">
+        <tr>
+            <td style="width:400px;"><b>用户</b></td>
+            <td style="width:400px;"><b>内容</b></td>
+        </tr>
+    </table>
+    <script src="jquery.js"></script>
+    <script>
+        var bt = document.getElementsByTagName('input');
+        var content = document.getElementById('content');
+
+        var liuyan = openDatabase('ly42', '1.0', 'text', 2 * 1024 * 1024); //创建一个名为ly的数据库
+
+        // console.log(liuyan)
+        //创建数据表
+        var msg;
+        var str;
+        // var numId = 1;
+        bt[1].onclick = function() {
+            if (content.value != '' && bt[0].value != '') {
+                liuyan.transaction(function(tx) {
+                    // numId++;
+                    tx.executeSql('CREATE TABLE IF NOT EXISTS LOGS (id unique, log)');
+                    tx.executeSql('INSERT INTO LOGS (id, log) VALUES (?,?)', [bt[0].value, content.value]);
+                    str = "<tr><td class = 'usid'>" + bt[0].value +
+                        "<td  contenteditable = 'true'>" + content.value + "<td class='now'>删除</td></tr>";
+                    document.querySelector('.table').innerHTML += str;
+                    $.each($('.now'), function(index) {
+                        $('.now').eq(index).click(function() {
+                            console.log($(this).siblings('.usid').html())
+                            fun($(this).siblings('.usid').html())
+                            $(this).parent().remove();
+                        })
+
+                    })
+                    content.value = '';
+                    bt[0].value = '';
+                    alert('发表成功');
+                })
+            } else {
+                alert('请输入内容');
+            }
+        }
+
+
+        liuyan.transaction(function(tx) {
+            tx.executeSql('SELECT * FROM LOGS ', [], function(tx, results) {
+
+                var len = results.rows.length,
+                    i;
+                msg = "<p>查询记录条数: " + len + "</p>";
+                document.querySelector('#status').innerHTML += msg;
+                for (i = 0; i < len; i++) {
+                    str = "<tr><td class='usid'>" + results.rows.item(i).id + "</td>" +
+                        "<td  contenteditable = 'true'>" + results.rows.item(i).log + "</td>" + "<td class='now'>删除</td>" + " </tr>";
+                    document.querySelector('.table').innerHTML += str;
+                }
+                console.log($('td'))
+                $.each($('.now'), function(index) {
+                    $('.now').eq(index).click(function() {
+                        console.log($(this).siblings('.usid').html())
+                        fun($(this).siblings('.usid').html())
+                        $(this).parent().remove();
+                    })
+
+                })
+
+            }, null)
+        })
+
+        function fun(clear) {
+            liuyan.transaction(function(tx) {
+                tx.executeSql('DELETE FROM LOGS WHERE id=?', [clear]);
+            });
+        }
+    </script>
+
+</html>
